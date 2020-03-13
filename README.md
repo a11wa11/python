@@ -1,2 +1,2 @@
 # python
-python_programming
+pythonの学習経緯をここに残す
