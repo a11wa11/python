@@ -1,0 +1,25 @@
+# .bashrc
+
+# User specific aliases and functions
+
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+alias ll='\ls -lh'
+alias less='less -N'
+
+
+PS1="\[\e[34m\]   <<<  \D{%H:%M}  \[\e[35m\]\w \[\e[34m\] >>> \n\$ \[\e[0m\]"
+HISTTIMEFORMAT='%m-%d %H:%M '
+HISTSIZE=50000
+export HISTIGNORE=pwd:cd:history:ls:ll:which
+export HISTCONTROL=ignoreboth
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi

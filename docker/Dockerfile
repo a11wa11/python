@@ -1,19 +1,13 @@
 FROM centos:7.5.1804
-RUN yum update -y
-
-RUN yum install -y epel-release
-RUN yum install -y tree
-RUN yum install -y vim
-# git入っている↓
-RUN yum groupinstall -y "Development Tools" 
-RUN yum -y install readline-devel zlib-devel bzip2-devel sqlite-devel openssl-devel
-RUN git clone https://github.com/pyenv/pyenv.git ~/.pyenv
-RUN echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
-RUN echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-RUN echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
-COPY ./template_bashrc.txt ~/.bashrc
-
-WORKDIR /dcdir
-
-# RUN pyenv install 3.5.2
-# RUN pyenv global 3.5.2
+RUN yum update -y \
+    && yum install -y tree vim wget openssl-devel epel-release \
+    && yum groupinstall -y "Development Tools" \
+    && cd /root && wget https://www.python.org/ftp/python/3.5.6/Python-3.5.6.tar.xz \
+    && tar -Jxvf Python-3.5.6.tar.xz \
+    && Python-3.5.6/configure --prefix=/usr/local/python \
+    && make \
+    && make install \
+    && rm -rf /root/*  \
+    && ln -s /usr/local/python/bin/python3.5 /usr/local/bin/python \
+    && ln -s /usr/local/python/bin/pip3.5 /usr/local/bin/pip
+WORKDIR /root/dcdir
