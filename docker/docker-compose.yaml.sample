@@ -1,0 +1,10 @@
+version: "3"    # versionは1,2,3とあり、書き方が異なるがとりあえず3でOK。
+services:   # コンテナの内容を決めていくが詳細は階層下に記載する
+  python_job:
+    image: centos:7.5.1804
+    build: .    # Dockerfileがある場所を指定する
+    volumes:    # マウントする場所を指定
+      - "./doc_dir/:/doc_dir"    # ローカル：コンテナ内
+    # ports:    # ポートを指定
+    #   - "3000:3000"   # ローカル：コンテナ内
+    tty: true   # おまじない
