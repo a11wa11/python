@@ -9,5 +9,8 @@ RUN yum update -y \
     && make install \
     && rm -rf /root/*  \
     && ln -s /usr/local/python/bin/python3.5 /usr/local/bin/python \
-    && ln -s /usr/local/python/bin/pip3.5 /usr/local/bin/pip
+    && ln -s /usr/local/python/bin/pip3.5 /usr/local/bin/pip \
+    && echo "export PATH=$PATH:/usr/local/python/bin" >> ~/.bashrc \
+    && pip install ipdb==0.13.3 pipdeptree
 WORKDIR /root/dcdir
+EXPOSE 80 443
