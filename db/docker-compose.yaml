@@ -1,0 +1,19 @@
+version: '3'
+services:  
+  db:
+     image: mymysql:1.0
+     container_name: mysql01
+     environment:
+       MYSQL_ROOT_PASSWORD: root
+       MYSQL_DATABASE: recruit
+       TZ: 'Asia/Tokyo'
+     command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+     volumes:
+       - "vol_mysql:/var/lib/mysql"
+       - "./my.cnf:/etc/mysql/conf.d/my.cnf"
+       - "./start.sql:/docker-entrypoint-initdb.d/start.sql"
+     ports:
+       - 3306:3306
+volumes:
+  vol_mysql:
+    
