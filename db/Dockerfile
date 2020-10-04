@@ -1,5 +1,9 @@
 FROM mysql:5.7
 EXPOSE 3306
+<<<<<<< HEAD
+WORKDIR /root
+=======
+>>>>>>> 7bfbb4ed2214f89ea5a27fa2a621de0810fd23d5
 RUN echo "alias ll='\ls -lh'" >> /root/.bashrc
 CMD ["mysqld"]
 
