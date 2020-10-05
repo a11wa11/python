@@ -13,4 +13,5 @@ RUN yum update -y \
     && echo "export PATH=$PATH:/usr/local/python/bin" >> ~/.bashrc \
     && pip install --upgrade pip \
     && pip install ipdb==0.13.3 pipdeptree
-WORKDIR /root/dirc
+WORKDIR /root/dcdir
+EXPOSE 80 443

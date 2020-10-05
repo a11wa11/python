@@ -2,7 +2,7 @@ version: '3'
 services:  
   db:
     image: mymysql:1.0
-    container_name: db
+    container_name: con_db
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: recruit
@@ -10,17 +10,17 @@ services:
     command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
     volumes:
       - "vol_mysql:/var/lib/mysql"
-      - "./my.cnf:/etc/mysql/conf.d/my.cnf"
+      - "./config_db/my.cnf:/etc/mysql/conf.d/my.cnf"
     #  ↓ /docker-entrypoint-initdb.dにある拡張子.sh、.sql、.sql.gzのファイルを実行する
-      - "./start.sql:/docker-entrypoint-initdb.d/start.sql"
+      - "./config_db/start.sql:/docker-entrypoint-initdb.d/start.sql"
     ports:
       - 3306:3306
     networks:
       - my-network
 
   python:
-      build: ../config_python/ #config_pythonのDockerfileを使用してコンテナ
-      container_name: my-python
+      build: ./config_python/ #config_pythonのDockerfileを使用してコンテナ
+      container_name: con-python
       tty: true
       volumes:
         - "vol_python:/root/dcdir"

@@ -1,0 +1,50 @@
+version: '3.3'
+services:  
+  db:
+    build: ./config_db
+    image: im_mysql
+    container_name: con_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: recruit
+      TZ: 'Asia/Tokyo'
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    expose: 
+      - "3306"
+    ports:
+      - 3306:3306
+    volumes:
+      - "vol_mysql:/var/lib/mysql"
+      - "./config_db/my.cnf:/etc/mysql/conf.d/my.cnf:ro"
+      # ↓ /docker-entrypoint-initdb.dにある拡張子.sh、.sql、.sql.gzのファイルを実行する
+      - "./config_db/start.sql:/docker-entrypoint-initdb.d/start.sql"
+    networks:
+      - my-network
+
+  app:
+    build: ./config_python
+    image: im_python
+    container_name: con_python
+    tty: true
+    expose: 
+      - "80"
+      - "443"
+    ports:
+      - 8080:80
+      - 8081:443
+    volumes:
+      # - "vol_python:/root/dirc"
+      - "./:/root/dirc"
+      - "./config_python/template_bashrc.txt:/root/.bashrc"
+    depends_on:
+      - db 
+    networks:
+      - my-network
+
+volumes:
+  vol_mysql:
+  vol_python:
+    
+networks:
+  my-network:
+    external: true
