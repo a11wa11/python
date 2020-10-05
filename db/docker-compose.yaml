@@ -1,19 +1,38 @@
 version: '3'
 services:  
   db:
-     image: mymysql:1.0
-     container_name: mysql01
-     environment:
-       MYSQL_ROOT_PASSWORD: root
-       MYSQL_DATABASE: recruit
-       TZ: 'Asia/Tokyo'
-     command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
-     volumes:
-       - "vol_mysql:/var/lib/mysql"
-       - "./my.cnf:/etc/mysql/conf.d/my.cnf"
-       - "./start.sql:/docker-entrypoint-initdb.d/start.sql"
-     ports:
-       - 3306:3306
+    image: mymysql:1.0
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: recruit
+      TZ: 'Asia/Tokyo'
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    volumes:
+      - "vol_mysql:/var/lib/mysql"
+      - "./my.cnf:/etc/mysql/conf.d/my.cnf"
+    #  ↓ /docker-entrypoint-initdb.dにある拡張子.sh、.sql、.sql.gzのファイルを実行する
+      - "./start.sql:/docker-entrypoint-initdb.d/start.sql"
+    ports:
+      - 3306:3306
+    networks:
+      - my-network
+
+  python:
+      build: ../config_python/ #config_pythonのDockerfileを使用してコンテナ
+      container_name: my-python
+      tty: true
+      volumes:
+        - "vol_python:/root/dcdir"
+      depends_on:
+        - db 
+      networks:
+        - my-network
+
 volumes:
   vol_mysql:
+  vol_python:
     
+networks:
+  my-network:
+    external: true
