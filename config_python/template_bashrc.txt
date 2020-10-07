@@ -10,14 +10,15 @@ alias less='less -N'
 alias updatedb='sudo /usr/libexec/locate.updatedb'
 
 # User specific functions
-source /Library/Developer/CommandLineTools/usr/share/git-core/git-prompt.sh
-source /Library/Developer/CommandLineTools/usr/share/git-core/git-completion.bash
+source /usr/share/git-core/contrib/completion/git-prompt.sh
+# to do 読み込めないので後日調査
+# source /usr/share/git-core/contrib/completion/git-completion.tcsh
 GIT_PS1_SHOWDIRTYSTATE=true
-PS1="\[\e[32m\]   ________ \D{%H:%M}  \[\e[33m\]\w \[\e[32m\] ________$(__git_ps1) \n\$ \[\e[0m\]"
+PS1="\[\e[33m\]   ________ \D{%H:%M}  \[\e[35m\]\w \[\e[33m\] ________$(__git_ps1) \n\$ \[\e[0m\]"
 HISTTIMEFORMAT='%m-%d %H:%M '
 HISTSIZE=50000
 export HISTIGNORE=pwd:cd:history:ls:ll:which
 export HISTCONTROL=ignoreboth
-export LC_ALL="ja_JP.UTF-8"
+export LANG="ja_JP.UTF-8"
 
 echo "bashrc loaded!"
