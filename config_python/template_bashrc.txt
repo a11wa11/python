@@ -11,7 +11,8 @@ alias updatedb='sudo /usr/libexec/locate.updatedb'
 
 # User specific functions
 source /usr/share/git-core/contrib/completion/git-prompt.sh
-source /usr/share/git-core/contrib/completion/git-completion.tcsh
+# to do 読み込めないので後日調査
+# source /usr/share/git-core/contrib/completion/git-completion.tcsh
 GIT_PS1_SHOWDIRTYSTATE=true
 PS1="\[\e[33m\]   ________ \D{%H:%M}  \[\e[35m\]\w \[\e[33m\] ________$(__git_ps1) \n\$ \[\e[0m\]"
 HISTTIMEFORMAT='%m-%d %H:%M '
