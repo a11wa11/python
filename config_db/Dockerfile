@@ -8,4 +8,4 @@ CMD ["mysqld"]
 # docker run --name コンテナ名 -e MYSQL_ROOT_PASSWORD=パスワード -d -p 3306:3306 -v ボリューム名:/var/lib/mysql イメージ名:タグ名
 
 # Docker for Mac のVM上のボリューム確認コマンド
-# docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i sh
+# docker run --name コンテナ名 -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i sh

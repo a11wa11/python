@@ -33,8 +33,7 @@ services:
       - 8080:80
       - 8081:443
     volumes:
-      # - "vol_python:/root/dirc"
-      - "./:/root/dirc"
+      - "./:/root/dirc:vol_python"
       - "./config_python/template_bashrc.txt:/root/.bashrc"
     depends_on:
       - db 
@@ -43,8 +42,8 @@ services:
 
 volumes:
   vol_mysql:
-  vol_python:
+  # vol_python:
     
 networks:
   my-network:
-    external: true
+    # external: true
