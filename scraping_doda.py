@@ -1,10 +1,11 @@
+from datetime import datetime
+import csv
 import logging.config
 
 logging.config.fileConfig('log/logging.conf')
 from bs4 import BeautifulSoup
 import re
 import requests
-import csv
 
 
 class Scraping:
@@ -117,7 +118,8 @@ class Scraping:
 
 def main():
     sc = Scraping()
-    f = open('doda_医療営業求人検索.csv', 'w')
+    file_name = './outputs/doda_scrp_%s.scv' % datetime.today().strftime("%Y%m%d_%H%M")
+    f = open(file_name, 'w')
     try:
         writer = csv.writer(f)
         writer.writerows([["会社名", "URL", "郵便番号", "住所", "TEL", "備考"]])
