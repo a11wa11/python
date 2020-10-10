@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+#! -*- coding: utf-8 -*-
+
 from datetime import datetime
 import csv
 import logging.config
 
-logging.config.fileConfig('log/logging.conf')
+logging.config.fileConfig('config_python/logging.conf')
 from bs4 import BeautifulSoup
 import re
 import requests
