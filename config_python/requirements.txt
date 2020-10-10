@@ -1,5 +1,11 @@
+appnope==0.1.0
 backcall==0.2.0
+beautifulsoup4==4.9.3
+bs4==0.0.1
+certifi==2020.6.20
+chardet==3.0.4
 decorator==4.4.2
+idna==2.10
 ipdb==0.13.3
 ipython==7.9.0
 ipython-genutils==0.2.0
@@ -13,6 +19,9 @@ prompt-toolkit==2.0.10
 ptyprocess==0.6.0
 Pygments==2.7.1
 PyMySQL==0.10.1
+requests==2.24.0
 six==1.15.0
+soupsieve==2.0.1
 traitlets==4.3.3
+urllib3==1.25.10
 wcwidth==0.2.5
