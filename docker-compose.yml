@@ -21,7 +21,8 @@ services:
   app:
     build: ./config_python
     image: im_python
-    container_name: con_python
+    container_name: con_py
+    # environment: TZ=Asia/Tokyo
     tty: true
     expose: 
       - "80"
@@ -30,8 +31,8 @@ services:
       - 8080:80
       - 8081:443
     volumes:
-      - "./:/root/dirc"
-      - "./config_python/template_bashrc.txt:/root/.bashrc"
+      - "vol_python:/root/log"
+      - ".:/root/dirc"
     depends_on:
       - db 
     networks:
@@ -39,8 +40,8 @@ services:
 
 volumes:
   vol_mysql:
-  # vol_python:
+  vol_python:
     
 networks:
   my-network:
-    # external: true
+    external: true
