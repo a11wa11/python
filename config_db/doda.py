@@ -20,6 +20,7 @@ class Doda(AbstractModel):
     class Meta:
         db_table = 'doda'
 
+
 def main():
     with db.atomic():
         if not db.table_exists(Doda):

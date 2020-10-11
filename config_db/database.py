@@ -36,6 +36,3 @@ class AbstractModel(Model):
     
     class Meta:
         database = db
-
-# db = db.connect()
-# database.close()
