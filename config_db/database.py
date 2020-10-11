@@ -1,12 +1,41 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from peewee import *
+import os
+from datetime import datetime
+from peewee import Model
+from peewee import MySQLDatabase
+from peewee import DateTimeField
+
+# 接続方法１
+# db = MySQLDatabase(
+#   database = 'database_name',
+#   host = 'host_name',
+#   user = 'user_name',
+#   password = 'password'
+#   port = 3306,
+#   charset = "utf8mb4"
+# )
+
 db = MySQLDatabase(
-  'recruit',
-  **{'user': 'root',
-     'host': 'con_db',
-     'password': 'root'}
+  database = os.environ.get('MYSQL_DATABASE'),
+  host = os.environ.get('MYSQL_ROOT_HOST'),
+  user = os.environ.get('MYSQL_USER'),
+  password = os.environ.get('MYSQL_PASSWORD')
 )
-db.connect()
-db.close()
+
+# 接続方法2 
+# from playhouse.db_url import connect
+# db = connect('mysql://user:passwd@ip:port/my_db')
+# db = connect(os.environ.get('DATABASE_URL'))
+
+
+class AbstractModel(Model):
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+    
+    class Meta:
+        database = db
+
+# db = db.connect()
+# database.close()
