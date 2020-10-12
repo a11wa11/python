@@ -2,34 +2,36 @@
 #! -*- coding: utf-8 -*-
 
 from datetime import datetime
+import re
 import csv
 import logging.config
 
-logging.config.fileConfig('config_python/logging.conf')
-from bs4 import BeautifulSoup
-import re
 import requests
+from bs4 import BeautifulSoup
+from config_db.doda import Doda
 
 
 class Scraping:
     BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList/j_oc__0108M/-preBtn__3/'
     OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?so=50&tp=1&preBtn=3&pic=0&oc=0108M&ds=0&page='
+    logging.config.fileConfig('config_python/logging.conf')
 
     def __init__(self):
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger(__name__)
+        self.table = Doda
 
-    def how_many_pages_exists(self):
+    def how_many_pages_exists(self) -> int:
         html = requests.get(self.BASE_PAGE)
         soup = BeautifulSoup(html.text, "html.parser")
         max_page_number = int(soup.find_all("a", class_="pagenation")[-1].string)
         return max_page_number
 
-    def all_pages(self, max_page_number):
+    def all_pages(self, max_page_number: int) -> list:
         """ get all_related_url """
         all_pages = [self.BASE_PAGE] + [self.OTHER_PAGE + str(i) for i in range(2, max_page_number + 1)]
         return all_pages
 
-    def search_recruit_info(self, all_pages):
+    def search_recruit_info(self, all_pages: list) -> list:
         company_urls = []
         for page_url in all_pages:
             html = requests.get(page_url)
@@ -40,7 +42,7 @@ class Scraping:
         return company_urls
 
     @staticmethod
-    def _company_info(key_tags):
+    def _company_info(key_tags) -> list:
         set_company_link = []
         for key_tag in key_tags:
             if "class" not in key_tag.attrs or key_tag['class'] != ["_JobListToDetail"]:
@@ -50,7 +52,7 @@ class Scraping:
                 set_company_link.append(company_link)
         return set_company_link
 
-    def company_details(self, company_urls, writer):
+    def company_details(self, company_urls: list, writer: csv.writer):
         for url in company_urls:
             if '-tab__pr/' in url:
                 url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
@@ -126,9 +128,9 @@ def main():
     try:
         writer = csv.writer(f)
         writer.writerows([["会社名", "URL", "郵便番号", "住所", "TEL", "備考"]])
-        max_page_number = sc.how_many_pages_exists()
-        all_pages = sc.all_pages(max_page_number)
-        company_urls = sc.search_recruit_info(all_pages)
+        max_page_number = sc.how_many_pages_exists() # type: int
+        all_pages = sc.all_pages(max_page_number) # type: list
+        company_urls = sc.search_recruit_info(all_pages) # type: list
         sc.company_details(company_urls, writer)
     except Exception as e:
         sc.logger.info(e)
