@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 #! -*- coding: utf-8 -*-
 
-from datetime import datetime
 import re
 import csv
 import logging.config
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
+from config_db.database import db
 from config_db.doda import Doda
 
 
@@ -22,8 +23,8 @@ class Scraping:
 
     def how_many_pages_exists(self) -> int:
         html = requests.get(self.BASE_PAGE)
-        soup = BeautifulSoup(html.text, "html.parser")
-        max_page_number = int(soup.find_all("a", class_="pagenation")[-1].string)
+        parser = BeautifulSoup(html.text, "html.parser")
+        max_page_number = int(parser.find_all("a", class_="pagenation")[-1].string)
         return max_page_number
 
     def all_pages(self, max_page_number: int) -> list:
@@ -35,8 +36,8 @@ class Scraping:
         company_urls = []
         for page_url in all_pages:
             html = requests.get(page_url)
-            soup = BeautifulSoup(html.text, "html.parser")
-            key_tags = soup.find_all("a")
+            parser = BeautifulSoup(html.text, "html.parser")
+            key_tags = parser.find_all("a")
             company_url = self._company_info(key_tags)
             company_urls += company_url
         return company_urls
@@ -52,90 +53,91 @@ class Scraping:
                 set_company_link.append(company_link)
         return set_company_link
 
-    def company_details(self, company_urls: list, writer: csv.writer):
-        for url in company_urls:
-            if '-tab__pr/' in url:
-                url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
-            html = requests.get(url)
-            soup = BeautifulSoup(html.text, "html.parser")
-            company_name = soup.find("p", "job_title").string
-            set_record = [[company_name, url]]
-            try:
-                set_record = self.get_address(set_record, soup)
-                set_record = self.get_tel(set_record, soup)
-            except Exception as e:
-                self.logger.info(e)
-                continue
-            finally:
-                writer.writerows(set_record)
+    def get_parser(self, url: str) -> BeautifulSoup:
+        if '-tab__pr/' in url:
+            url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
+        html = requests.get(url)
+        parser = BeautifulSoup(html.text, "html.parser")
+        return parser
 
-    def get_address(self, set_record: object, soup: object) -> object:
+    def get_company_name(self, parser: BeautifulSoup) -> str:
+            return parser.find("p", "job_title").string
+
+    def get_address(self, parser: BeautifulSoup) -> tuple:
         try:
             address_match = re.compile("所在地")
-            post_number, address = "-", "_"
-            address_tag = soup.find("th", text=address_match)
+            postal_code, address = "", ""
+            address_tag = parser.find("th", text=address_match)
             if address_tag is None:
-                address_tag = soup.find("dt", text=address_match)
+                address_tag = parser.find("dt", text=address_match)
             if address_tag:
                 address_tag_parent = address_tag.parent
                 address = address_tag_parent.td
                 if address is None:
                     address = address_tag_parent.dd
                 address = address.text.replace("\r\n", "").replace("\n", "").replace(" ", "").replace("　", "")
-                post_match = re.findall(r"〒[0-9]{3}-[0-9]{4}", address)
+                post_match = re.findall(r"[0-9]{3}-[0-9]{4}", address)
                 if post_match:
-                    post_number = post_match[0]
-                    address = re.sub(r"〒[0-9]{3}-[0-9]{4}", "", address)
+                    postal_code = post_match[0]
+                    address = re.sub(r"[0-9]{3}-[0-9]{4}", "", address).replace("〒", "")
         except Exception as e:
             self.logger.info(e)
         finally:
-            set_record[0] += [post_number, address]
-            return set_record
+            return postal_code, address
 
-    def get_tel(self, set_record, soup):
-        try:
-            tel_match = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
-            tel = "-"
-            remarks = "-"
-            company_hp = "-"
-            tel_tag = soup.find("dt", text=re.compile("連絡先"))
-            if tel_tag:
-                tel_tag_parent = tel_tag.parent.p
-                if (tel_match.findall(tel_tag_parent.text) is not None) and (tel_match.findall(tel_tag_parent.text) != []):
-                    tel = tel_match.findall(tel_tag_parent.text)
-                    tel = tel[0] if isinstance(tel, list) and tel != [] else tel
-                    remarks = tel_tag_parent.text.replace("\u3000", " ").replace(" ", "")
-                    if not tel:
-                        tel = "-"
+    def get_tel(self, parser: object) -> tuple:
+        tel_match = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
+        tel = ""
+        remarks = ""
+        tel_tag = parser.find("dt", text=re.compile("連絡先"))
+        if tel_tag:
+            tel_tag_parent = tel_tag.parent.p
+            if (tel_match.findall(tel_tag_parent.text) is not None) and (tel_match.findall(tel_tag_parent.text) != []):
+                tel = tel_match.findall(tel_tag_parent.text)
+                tel = tel[0] if isinstance(tel, list) and tel != [] else tel
+                remarks = tel_tag_parent.text.replace("\u3000", " ").replace(" ", "")
+                if not tel:
+                    tel = ""
+        return tel, remarks
 
-            hp_tag = soup.find(text=re.compile("企業URL"))
-            if hp_tag is not None:
-                company_hp = hp_tag.parent.parent.a.text
-                company_hp = company_hp.replace(" ", "")
-        except Exception as e:
-            self.logger.info(e)
-        finally:
-            set_record[0].append("TEL: " + tel)
-            set_record[0].append(remarks)
-            set_record[0].append(company_hp)
-            return set_record
-
+    def get_commany_hp(self, parser: object) -> tuple:
+        company_hp = ""
+        hp_tag = parser.find(text=re.compile("企業URL"))
+        if hp_tag is not None:
+            company_hp = hp_tag.parent.parent.a.text
+            company_hp = company_hp.replace(" ", "").replace("\r\n", "").replace("\n", "")
+        return company_hp
 
 def main():
     sc = Scraping()
-    file_name = './outputs/doda_scrp_%s.scv' % datetime.today().strftime("%Y%m%d_%H%M")
-    f = open(file_name, 'w')
+    if not db.table_exists(Doda):
+        db.create_tables([Doda])
     try:
-        writer = csv.writer(f)
-        writer.writerows([["会社名", "URL", "郵便番号", "住所", "TEL", "備考"]])
-        max_page_number = sc.how_many_pages_exists() # type: int
-        all_pages = sc.all_pages(max_page_number) # type: list
-        company_urls = sc.search_recruit_info(all_pages) # type: list
-        sc.company_details(company_urls, writer)
+        max_page_number = sc.how_many_pages_exists()
+        all_pages = sc.all_pages(max_page_number)
+        company_urls = sc.search_recruit_info(all_pages)
+        for url in company_urls:
+            try:
+                parser = sc.get_parser(url)
+                company_name = sc.get_company_name(parser)
+                postal_code, address = sc.get_address(parser)
+                tel, remarks = sc.get_tel(parser)
+                company_hp = sc.get_commany_hp(parser)
+                Doda.insert(
+                    company_name = company_name,
+                    url_doda = url,
+                    postal_code = postal_code,
+                    address = address,
+                    TEL = tel,
+                    remarks = remarks,
+                    url_company = company_hp
+                ).execute()
+                sc.logger.info(company_name + " was sucessfully inserted")
+            except Exception as e:
+                sc.logger.info(e)
+                continue
     except Exception as e:
-        sc.logger.info(e)
-    finally:
-        f.close()
+        sc.logger.error(e)
 
 
 if __name__ == "__main__":
