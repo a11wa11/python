@@ -3,6 +3,7 @@
 
 import os
 from datetime import datetime
+
 from peewee import Model
 from peewee import MySQLDatabase
 from peewee import DateTimeField
@@ -17,17 +18,16 @@ from peewee import DateTimeField
 #   charset = "utf8mb4"
 # )
 
-db = MySQLDatabase(
-  database = os.environ.get('MYSQL_DATABASE'),
-  host = os.environ.get('MYSQL_ROOT_HOST'),
-  user = os.environ.get('MYSQL_USER'),
-  password = os.environ.get('MYSQL_PASSWORD')
-)
+# db = MySQLDatabase(
+#   database = os.environ.get('MYSQL_DATABASE'),
+#   host = os.environ.get('MYSQL_HOST'),
+#   user = os.environ.get('MYSQL_USER'),
+#   password = os.environ.get('MYSQL_PASSWORD')
+# )
 
-# 接続方法2 
-# from playhouse.db_url import connect
-# db = connect('mysql://user:passwd@ip:port/my_db')
-# db = connect(os.environ.get('DATABASE_URL'))
+# 接続方法2 -> db = connect('mysql://user:password@ip:port/my_db')
+from playhouse.db_url import connect
+db = connect(os.environ.get('DATABASE_URL'))
 
 
 class AbstractModel(Model):
