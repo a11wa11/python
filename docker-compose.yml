@@ -22,7 +22,7 @@ services:
     build: ./config_python
     image: im_python
     container_name: con_py
-    # environment: TZ=Asia/Tokyo
+    env_file: ./config_db/mysql.env
     tty: true
     expose: 
       - "80"
