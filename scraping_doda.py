@@ -4,6 +4,7 @@
 import re
 import csv
 import logging.config
+import time
 from datetime import datetime
 
 import requests
@@ -117,6 +118,7 @@ class Scraping:
             all_pages = self.all_pages(max_page_number)
             company_urls = self.search_recruit_info(all_pages)
             for url in company_urls:
+                time.sleep(1)
                 try:
                     parser = self.get_parser(url)
                     company_name = self.get_company_name(parser)
