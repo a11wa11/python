@@ -109,8 +109,9 @@ class Scraping:
         return company_hp
 
     def main(self):
-        if not db.table_exists(Doda):
-            db.create_tables([Doda])
+        if "doda" in db.get_tables():
+            db.drop_tables(Doda)
+        db.create_tables([Doda])
         try:
             max_page_number = self.how_many_pages_exists()
             all_pages = self.all_pages(max_page_number)
