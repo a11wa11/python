@@ -4,6 +4,7 @@
 import re
 import csv
 import logging.config
+import time
 from datetime import datetime
 
 import requests
@@ -108,37 +109,38 @@ class Scraping:
             company_hp = company_hp.replace(" ", "").replace("\r\n", "").replace("\n", "")
         return company_hp
 
-def main():
-    sc = Scraping()
-    if not db.table_exists(Doda):
+    def main(self):
+        if "doda" in db.get_tables():
+            db.drop_tables(Doda)
         db.create_tables([Doda])
-    try:
-        max_page_number = sc.how_many_pages_exists()
-        all_pages = sc.all_pages(max_page_number)
-        company_urls = sc.search_recruit_info(all_pages)
-        for url in company_urls:
-            try:
-                parser = sc.get_parser(url)
-                company_name = sc.get_company_name(parser)
-                postal_code, address = sc.get_address(parser)
-                tel, remarks = sc.get_tel(parser)
-                company_hp = sc.get_commany_hp(parser)
-                Doda.insert(
-                    company_name = company_name,
-                    url_doda = url,
-                    postal_code = postal_code,
-                    address = address,
-                    TEL = tel,
-                    remarks = remarks,
-                    url_company = company_hp
-                ).execute()
-                sc.logger.info(company_name + " was sucessfully inserted")
-            except Exception as e:
-                sc.logger.info(e)
-                continue
-    except Exception as e:
-        sc.logger.error(e)
+        try:
+            max_page_number = self.how_many_pages_exists()
+            all_pages = self.all_pages(max_page_number)
+            company_urls = self.search_recruit_info(all_pages)
+            for url in company_urls:
+                time.sleep(1)
+                try:
+                    parser = self.get_parser(url)
+                    company_name = self.get_company_name(parser)
+                    postal_code, address = self.get_address(parser)
+                    tel, remarks = self.get_tel(parser)
+                    company_hp = self.get_commany_hp(parser)
+                    Doda.insert(
+                        company_name = company_name,
+                        url_doda = url,
+                        postal_code = postal_code,
+                        address = address,
+                        TEL = tel,
+                        remarks = remarks,
+                        url_company = company_hp
+                    ).execute()
+                    self.logger.info(company_name + " was sucessfully inserted")
+                except Exception as e:
+                    self.logger.info(e)
+                    continue
+        except Exception as e:
+            self.logger.error(e)
 
 
 if __name__ == "__main__":
-    main()
+    Scraping().main()

@@ -22,10 +22,9 @@ class Doda(AbstractModel):
 
 
 def main():
-    with db.atomic():
-        if not db.table_exists(Doda):
-        # if not Doda.table_exists():
-            db.create_tables([Doda])
+    if not db.table_exists("doda"):
+    # if not Doda.table_exists():
+        db.create_tables([Doda])
 
 
 if __name__ == "__main__":

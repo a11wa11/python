@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from peewee import Model
 from peewee import MySQLDatabase
@@ -31,8 +31,8 @@ db = connect(os.environ.get('DATABASE_URL'))
 
 
 class AbstractModel(Model):
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    created_at = DateTimeField(default=datetime.utcnow() + timedelta(hours=+9))
+    updated_at = DateTimeField(default=datetime.utcnow() + timedelta(hours=+9))
     
     class Meta:
         database = db
