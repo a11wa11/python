@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+<title>{{ title }}</title>
+<style>
+    /* h3{color:purple;} */
+    table {
+    table-layout: fixed;
+    }
+    table td {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    }
+
+</style>
+</head>
+<body>
+{% block content %}
+<!-- ここにメインコンテンツを書く -->
+{% endblock %}
+</body>
+</html>
