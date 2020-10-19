@@ -1,0 +1,4 @@
+pipdeptree==1.0.0
+pip-autoremove==0.9.1
+ipdb==0.13.3
+pylint==2.6.0
