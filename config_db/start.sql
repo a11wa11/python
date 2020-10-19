@@ -1,5 +1,6 @@
 CREATE DATABASE IF NOT EXISTS `recruit`;
 USE `recruit`;
+ALTER DATABASE `recruit` default character set utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sample1` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
