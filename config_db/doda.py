@@ -5,8 +5,8 @@ import os
 
 from peewee import Model
 from peewee import CharField
-from database import db
-from database import AbstractModel
+from config_db.database import db
+from config_db.database import AbstractModel
 
 class Doda(AbstractModel):
     company_name = CharField()
