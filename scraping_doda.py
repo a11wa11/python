@@ -14,42 +14,25 @@ from base_scraping import BaseScraping
 
 
 class ScrapingDoda(BaseScraping):
-    logging.config.fileConfig('config_python/logging.conf')
 
     def __init__(self):
+        logging.config.fileConfig('config_python/logging.conf')
         self.logger = logging.getLogger(__name__)
-        self.table = Doda
-        self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList/j_oc__0108M/-preBtn__3/'
-        self.OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?so=50&tp=1&preBtn=3&pic=0&oc=0108M&ds=0&page='
+        self.table = Doda()
+        self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
 
-    def get_parser(self, url: str) -> BeautifulSoup:
-        if '-tab__pr/' in url:
-            url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
-        html = requests.get(url)
-        parser = BeautifulSoup(html.text, "html.parser")
-        return parser
-
-    def search_recruit_info(self, per_page_urls: list) -> list:
+    def get_company_urls_on_the_page(self, page_parser: BeautifulSoup) -> list:
+        key_tags = page_parser.find_all("a")
         company_urls = []
-        for page_url in per_page_urls:
-            html = requests.get(page_url)
-            parser = BeautifulSoup(html.text, "html.parser")
-            key_tags = parser.find_all("a")
-            company_url = self._company_info(key_tags)
-            company_urls += company_url
-        return company_urls
-
-    def _company_info(self, key_tags: BeautifulSoup) -> list:
-        set_company_link = []
         for key_tag in key_tags:
             if not "class" in key_tag.attrs or key_tag['class'] != ["_JobListToDetail"]:
                 continue
             company_link = key_tag.get("href")
-            if company_link not in set_company_link:
-                set_company_link.append(company_link)
-        return set_company_link
+            if company_link not in company_urls:
+                company_urls.append(company_link)
+        return company_urls
 
-    def get_address(self, parser: BeautifulSoup, match_address: object) -> tuple:
+    def get_postal_code_and_address(self, parser: BeautifulSoup, match_address: object) -> tuple:
         try:
             postal_code, address = "", ""
             address_tag = parser.find("th", text=match_address)
@@ -71,10 +54,9 @@ class ScrapingDoda(BaseScraping):
         finally:
             return postal_code, address
 
-    def get_tel(self, parser: object, match_tel: object, address: str) -> tuple:
-        tel = ""
-        remarks = ""
-        tel_tag = parser.find("dt", text=re.compile("連絡先"))
+    def get_tel(self, url_doda_parser: BeautifulSoup, match_tel: object, address: str) -> tuple:
+        tel, remarks = "", ""
+        tel_tag = url_doda_parser.find("dt", text=re.compile("連絡先"))
         if not tel_tag:
             return tel, remarks
         
@@ -100,29 +82,44 @@ class ScrapingDoda(BaseScraping):
 
         try:
             max_page_number = super().how_many_pages_exists()
-            per_page_urls = super().get_per_page_urls(max_page_number)
-            company_urls = self.search_recruit_info(per_page_urls)
-            for url in company_urls:
-                time.sleep(1)
-                try:
-                    parser = self.get_parser(url)
-                    company_name = super().get_company_name(parser)
-                    postal_code, address = self.get_address(parser, match_address)
-                    tel, remarks = self.get_tel(parser, match_tel, address)
-                    company_hp = super().get_commany_hp(parser)
-                    self.table.insert(
-                        company_name = company_name,
-                        url_doda = url,
-                        postal_code = postal_code,
-                        address = address,
-                        TEL = tel,
-                        remarks = remarks,
-                        url_company = company_hp
-                    ).execute()
-                    self.logger.info(company_name + " was sucessfully inserted")
-                except Exception as e:
-                    self.logger.error(e)
-                    continue
+            page_counter = 1
+            data_counter = 1
+            current_page_url = self.BASE_PAGE
+            while page_counter < max_page_number:
+                self.logger.info(
+                    ("starting analyze [%s/%s]: " % (str(page_counter), str(max_page_number))
+                    ) + current_page_url
+                )
+                page_parser = super().get_parser(current_page_url)
+                company_urls = self.get_company_urls_on_the_page(page_parser)
+                for url_doda in company_urls:
+                    time.sleep(1)
+                    try:
+                        url_doda_parser = super().get_parser(url_doda)
+                        company_name = super().get_company_name(url_doda_parser)
+                        postal_code, address = self.get_postal_code_and_address(url_doda_parser, match_address)
+                        tel, remarks = self.get_tel(url_doda_parser, match_tel, address)
+                        company_hp = super().get_commany_hp(url_doda_parser)
+                        self.table.insert(
+                            company_name = company_name,
+                            url_doda = url_doda,
+                            postal_code = postal_code,
+                            address = address,
+                            TEL = tel,
+                            remarks = remarks,
+                            url_company = company_hp
+                        ).execute()
+                        self.logger.info(str(data_counter) + ": " + company_name + " was sucessfully inserted")
+                        data_counter += 1
+                    except Exception as e:
+                        self.logger.error(e)
+                        continue
+                pegenations_parser = super().get_parser(current_page_url)
+                next_page_url = super().get_next_page_url(pegenations_parser)
+                current_page_url = next_page_url
+                page_counter += 1
+            self.logger.info("finished analyze.")
+
         except Exception as e:
             self.logger.error(e)
 
