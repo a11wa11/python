@@ -2,23 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import re
-import csv
 import logging.config
-import time
 
 import requests
 from bs4 import BeautifulSoup
 
-from config_db.database import db
-from config_db.doda import Doda
-
-from abc import ABCMeta, abstractmethod
-
 
 class BaseScraping():
-    logging.config.fileConfig('config_python/logging.conf')
 
     def __init__(self):
+        logging.config.fileConfig('config_python/logging.conf')
         self.logger = logging.getLogger(__name__)
         self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
         self.OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?pic=1&ds=0&so=50&tp=1&page='
@@ -28,12 +21,26 @@ class BaseScraping():
         html = requests.get(self.BASE_PAGE)
         parser = BeautifulSoup(html.text, "html.parser")
         max_page_number = int(parser.find_all("a", class_="pagenation")[-1].string)
+        self.logger.info("Max Page is %s" % max_page_number)
         return max_page_number
     
     def get_per_page_urls(self, max_page_number: int) -> list:
         """ ページ数分の各URLを取得する """
         per_page_urls = [self.BASE_PAGE] + [self.OTHER_PAGE + str(i) for i in range(2, max_page_number + 1)]
+        self.logger.info("got each pages URL.")
         return per_page_urls
+
+    def get_next_page_url(self, pegenations_parser: BeautifulSoup) -> str:
+        """ ページ数分の各URLを取得する """
+        pagenations = pegenations_parser.find_all("a", class_="pagenation")
+        
+        current_page_num = int(pegenations_parser.find("span", class_="current").text)
+        next_page_num = current_page_num + 1
+        for pagenation in pagenations:
+            if int(pagenation.text) == next_page_num:
+                next_page_url = pagenation.get("href")
+                return next_page_url
+        self.logger.error("couldn't get next page url.")
 
     def search_recruit_info(self, per_page_urls: list) -> list:
         company_urls = []
@@ -64,82 +71,18 @@ class BaseScraping():
         return parser
 
     def get_company_name(self, parser: BeautifulSoup) -> str:
-            return parser.find("p", "job_title").string
+        return parser.find("p", "job_title").string
 
     def get_address(self, parser: BeautifulSoup) -> tuple:
-        try:
-            address_match = re.compile("所在地")
-            postal_code, address = "", ""
-            address_tag = parser.find("th", text=address_match)
-            if address_tag is None:
-                address_tag = parser.find("dt", text=address_match)
-            if address_tag:
-                address_tag_parent = address_tag.parent
-                address = address_tag_parent.td
-                if address is None:
-                    address = address_tag_parent.dd
-                address = address.text.replace("\r\n", "").replace("\n", "").replace(" ", "").replace("　", "")
-                post_match = re.findall(r"[0-9]{3}-[0-9]{4}", address)
-                if post_match:
-                    postal_code = post_match[0]
-                    address = re.sub(r"[0-9]{3}-[0-9]{4}", "", address).replace("〒", "")
-        except Exception as e:
-            self.logger.info(e)
-        finally:
-            return postal_code, address
+        pass
 
     def get_tel(self, parser: object) -> tuple:
-        tel_match = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
-        tel = ""
-        remarks = ""
-        tel_tag = parser.find("dt", text=re.compile("連絡先"))
-        if tel_tag:
-            tel_tag_parent = tel_tag.parent.p
-            if (tel_match.findall(tel_tag_parent.text) is not None) and (tel_match.findall(tel_tag_parent.text) != []):
-                tel = tel_match.findall(tel_tag_parent.text)
-                tel = tel[0] if isinstance(tel, list) and tel != [] else tel
-                remarks = tel_tag_parent.text.replace("\u3000", " ").replace(" ", "")
-                if not tel:
-                    tel = ""
-        return tel, remarks
+        pass
 
-    def get_commany_hp(self, parser: object) -> tuple:
+    def get_commany_hp(self, url_doda_parser: BeautifulSoup) -> tuple:
         company_hp = ""
-        hp_tag = parser.find(text=re.compile("企業URL"))
+        hp_tag = url_doda_parser.find(text=re.compile("企業URL"))
         if hp_tag is not None:
             company_hp = hp_tag.parent.parent.a.text
             company_hp = company_hp.replace(" ", "").replace("\r\n", "").replace("\n", "")
         return company_hp
-
-    def main(self):
-        try:
-            max_page_number = self.how_many_pages_exists()
-            per_page_urls = self.get_per_page_urls(max_page_number)
-            company_urls = self.search_recruit_info(per_page_urls)
-            for url in company_urls:
-                time.sleep(1)
-                try:
-                    parser = self.get_parser(url)
-                    company_name = self.get_company_name(parser)
-                    postal_code, address = self.get_address(parser)
-                    tel, remarks = self.get_tel(parser)
-                    company_hp = self.get_commany_hp(parser)
-                    Doda.insert(
-                        company_name = company_name,
-                        url_doda = url,
-                        postal_code = postal_code,
-                        address = address,
-                        TEL = tel,
-                        remarks = remarks,
-                        url_company = company_hp
-                    ).execute()
-                    self.logger.info(company_name + " was sucessfully inserted")
-                except Exception as e:
-                    self.logger.info(e)
-                    continue
-        except Exception as e:
-            self.logger.error(e)
-
-
-if __name__ == "__main__":
-    BaseScraping().main()
