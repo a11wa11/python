@@ -79,12 +79,13 @@ class ScrapingDoda(BaseScraping):
 
         match_address = re.compile("所在地")
         match_tel = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
+        current_page_url = self.BASE_PAGE
+        page_counter = 1
+        data_counter = 1
+        parser = super().get_parser(current_page_url)
 
         try:
-            max_page_number = super().how_many_pages_exists()
-            page_counter = 1
-            data_counter = 1
-            current_page_url = self.BASE_PAGE
+            max_page_number = super().how_many_pages_exists(parser)
             while page_counter < max_page_number:
                 self.logger.info(
                     ("starting analyze [%s/%s]: " % (str(page_counter), str(max_page_number))
