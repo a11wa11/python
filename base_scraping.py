@@ -16,10 +16,15 @@ class BaseScraping():
         self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
         self.OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?pic=1&ds=0&so=50&tp=1&page='
 
-    def how_many_pages_exists(self) -> int:
-        """ ページネーションから最大ページ数を取得する """
-        html = requests.get(self.BASE_PAGE)
+    def get_parser(self, url: str, replace=False) -> BeautifulSoup:
+        if replace == True and ('-tab__pr/' in url):
+            url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
+        html = requests.get(url)
         parser = BeautifulSoup(html.text, "html.parser")
+        return parser
+
+    def how_many_pages_exists(self, parser: BeautifulSoup) -> int:
+        """ ページネーションから最大ページ数を取得する """
         max_page_number = int(parser.find_all("a", class_="pagenation")[-1].string)
         self.logger.info("Max Page is %s" % max_page_number)
         return max_page_number
@@ -33,7 +38,6 @@ class BaseScraping():
     def get_next_page_url(self, pegenations_parser: BeautifulSoup) -> str:
         """ ページ数分の各URLを取得する """
         pagenations = pegenations_parser.find_all("a", class_="pagenation")
-        
         current_page_num = int(pegenations_parser.find("span", class_="current").text)
         next_page_num = current_page_num + 1
         for pagenation in pagenations:
@@ -62,13 +66,6 @@ class BaseScraping():
             if company_link not in set_company_link:
                 set_company_link.append(company_link)
         return set_company_link
-
-    def get_parser(self, url: str) -> BeautifulSoup:
-        if '-tab__pr/' in url:
-            url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
-        html = requests.get(url)
-        parser = BeautifulSoup(html.text, "html.parser")
-        return parser
 
     def get_company_name(self, parser: BeautifulSoup) -> str:
         return parser.find("p", "job_title").string
