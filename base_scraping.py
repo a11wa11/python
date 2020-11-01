@@ -17,8 +17,6 @@ class BaseScraping():
         self.OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?pic=1&ds=0&so=50&tp=1&page='
 
     def get_parser(self, url: str, replace=False) -> BeautifulSoup:
-        if replace == True and ('-tab__pr/' in url):
-            url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
         html = requests.get(url)
         parser = BeautifulSoup(html.text, "html.parser")
         return parser
