@@ -5,7 +5,6 @@ import re
 import time
 import logging.config
 
-import requests
 from bs4 import BeautifulSoup
 
 from config_db.database import db
@@ -19,7 +18,8 @@ class ScrapingDoda(BaseScraping):
         logging.config.fileConfig('config_python/logging.conf')
         self.logger = logging.getLogger(__name__)
         self.table = Doda()
-        self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
+        # self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
+        self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?charset=SHIFT-JIS&fktt=4&kk=2&sid=TopSearch&usrclk=PC_logout_kyujinSearchArea_searchButton_job&oc=12L'
 
     def get_company_urls_on_the_page(self, page_parser: BeautifulSoup) -> list:
         key_tags = page_parser.find_all("a")
@@ -96,6 +96,8 @@ class ScrapingDoda(BaseScraping):
                 for url_doda in company_urls:
                     time.sleep(1)
                     try:
+                        if '-tab__pr/' in url_doda:
+                            url_doda = url_doda.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
                         url_doda_parser = super().get_parser(url_doda)
                         company_name = super().get_company_name(url_doda_parser)
                         postal_code, address = self.get_postal_code_and_address(url_doda_parser, match_address)
