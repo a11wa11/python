@@ -16,7 +16,7 @@ class BaseScraping():
         self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
         self.OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?pic=1&ds=0&so=50&tp=1&page='
 
-    def get_parser(self, url: str, replace=False) -> BeautifulSoup:
+    def get_parser(self, url: str) -> BeautifulSoup:
         html = requests.get(url)
         parser = BeautifulSoup(html.text, "html.parser")
         return parser
@@ -74,9 +74,9 @@ class BaseScraping():
     def get_tel(self, parser: object) -> tuple:
         pass
 
-    def get_commany_hp(self, url_doda_parser: BeautifulSoup) -> tuple:
+    def get_commany_hp(self, parser: BeautifulSoup, match_text=None) -> tuple:
         company_hp = ""
-        hp_tag = url_doda_parser.find(text=re.compile("企業URL"))
+        hp_tag = parser.find(text=match_text)
         if hp_tag is not None:
             company_hp = hp_tag.parent.parent.a.text
             company_hp = company_hp.replace(" ", "").replace("\r\n", "").replace("\n", "")
