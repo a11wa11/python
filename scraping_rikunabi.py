@@ -25,16 +25,6 @@ class ScrapingRikunabi(BaseScraping):
         self.match_tel = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
         self.recruit_agent = False
 
-    def drop_table(self, table_name: str):
-        """ 既存のテーブルを削除する """
-        try:
-            if table_name in db.get_tables():
-                db.drop_tables(self.table.__class__)
-            db.create_tables([self.table.__class__])
-        except Exception as e:
-            self.logger.error("failed to drop %s table" % table_name)
-            self.logger.error(e)
-
     def how_many_job_offers_exists(self, parser: BeautifulSoup) -> int:
         """ 求人数を取得する """
         try:
@@ -43,7 +33,7 @@ class ScrapingRikunabi(BaseScraping):
             return max_job_offers
         except Exception as e:
             self.logger.error("failed to get number of max job offers")
-            self.logger.error(e)        
+            self.logger.error(e)
 
     def get_companies_links_on_the_page(self, parser: BeautifulSoup) -> list:
         """ 各企業の求人詳細ページリンクを取得する """
@@ -92,24 +82,10 @@ class ScrapingRikunabi(BaseScraping):
                 company_name_txt = parser.find("p", class_="rnn-offerCompanyName").string
             else:
                 company_name_txt = parser.find("a", class_="rn3-companyOfferCompany__link js-companyOfferCompany__link").string
-            company_name = self.replace_text(company_name_txt, True)
+            company_name = super().replace_text(company_name_txt, True)
             return company_name
         except Exception as e:
             self.logger.error("failed to get company_name.")
-            self.logger.error(e)
-
-    def replace_text(self, raw_data: str, company=False, working_office=False) -> str:
-        try:
-            deleted_new_line_text = raw_data.replace("\r\n", "").replace("\n", "").replace("\r", "")
-            deleted_spaces_text = re.sub("  +", "", deleted_new_line_text)
-            text = deleted_spaces_text.replace("\u3000", " ").replace("\xa0", " ")
-            if company is True:
-                text = text.replace("株式会社 ", "(株)").replace("株式会社", "(株)")
-            if working_office is True:
-                text = text.replace("勤務地", "")
-            return text
-        except Exception as e:
-            self.logger.error("failed to replace text.")
             self.logger.error(e)
 
     def get_address(self, parser: BeautifulSoup) -> str:
@@ -129,7 +105,7 @@ class ScrapingRikunabi(BaseScraping):
 
             address = raw_data_address.text
             address = re.sub(r"〒[0-9]{3}-[0-9]{4}", "", address)
-            address = self.replace_text(address)
+            address = super().replace_text(address)
         except Exception as e:
             self.logger.error("failed to get address.")
             self.logger.error(e)
@@ -194,7 +170,7 @@ class ScrapingRikunabi(BaseScraping):
                 if not working_offices_candidate:
                     return
                 element = working_offices_candidate.find_next_siblings()[0]
-            working_offices = self.replace_text(element.text, working_office=True)
+            working_offices = super().replace_text(element.text, working_office=True)
         except Exception as e:
             self.logger.error("failed to get working office.")
             self.logger.error(e)
@@ -236,7 +212,7 @@ class ScrapingRikunabi(BaseScraping):
         job_offers_parser = super().get_parser(self.current_page_url)
 
         try:
-            self.drop_table("rikunabi")
+            super().drop_table("rikunabi")
             max_job_offers = self.how_many_job_offers_exists(job_offers_parser)
             while data_counter < max_job_offers:
                 self.logger.info(
