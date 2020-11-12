@@ -7,19 +7,35 @@ import logging.config
 import requests
 from bs4 import BeautifulSoup
 
+from config_db.database import db
+
 
 class BaseScraping():
 
     def __init__(self):
         logging.config.fileConfig('config_python/logging.conf')
         self.logger = logging.getLogger(__name__)
+        self.table = None
         self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
         self.OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?pic=1&ds=0&so=50&tp=1&page='
 
-    def how_many_pages_exists(self) -> int:
-        """ ページネーションから最大ページ数を取得する """
-        html = requests.get(self.BASE_PAGE)
+    def drop_table(self, table_name: str):
+        """ 既存のテーブルを削除する """
+        try:
+            if table_name in db.get_tables():
+                db.drop_tables(self.table.__class__)
+            db.create_tables([self.table.__class__])
+        except Exception as e:
+            self.logger.error("failed to drop %s table" % table_name)
+            self.logger.error(e)
+
+    def get_parser(self, url: str) -> BeautifulSoup:
+        html = requests.get(url)
         parser = BeautifulSoup(html.text, "html.parser")
+        return parser
+
+    def how_many_pages_exists(self, parser: BeautifulSoup) -> int:
+        """ ページネーションから最大ページ数を取得する """
         max_page_number = int(parser.find_all("a", class_="pagenation")[-1].string)
         self.logger.info("Max Page is %s" % max_page_number)
         return max_page_number
@@ -33,7 +49,6 @@ class BaseScraping():
     def get_next_page_url(self, pegenations_parser: BeautifulSoup) -> str:
         """ ページ数分の各URLを取得する """
         pagenations = pegenations_parser.find_all("a", class_="pagenation")
-        
         current_page_num = int(pegenations_parser.find("span", class_="current").text)
         next_page_num = current_page_num + 1
         for pagenation in pagenations:
@@ -63,13 +78,6 @@ class BaseScraping():
                 set_company_link.append(company_link)
         return set_company_link
 
-    def get_parser(self, url: str) -> BeautifulSoup:
-        if '-tab__pr/' in url:
-            url = url.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
-        html = requests.get(url)
-        parser = BeautifulSoup(html.text, "html.parser")
-        return parser
-
     def get_company_name(self, parser: BeautifulSoup) -> str:
         return parser.find("p", "job_title").string
 
@@ -79,10 +87,24 @@ class BaseScraping():
     def get_tel(self, parser: object) -> tuple:
         pass
 
-    def get_commany_hp(self, url_doda_parser: BeautifulSoup) -> tuple:
+    def get_commany_hp(self, parser: BeautifulSoup, match_text=None) -> tuple:
         company_hp = ""
-        hp_tag = url_doda_parser.find(text=re.compile("企業URL"))
+        hp_tag = parser.find(text=match_text)
         if hp_tag is not None:
             company_hp = hp_tag.parent.parent.a.text
             company_hp = company_hp.replace(" ", "").replace("\r\n", "").replace("\n", "")
         return company_hp
+
+    def replace_text(self, raw_data: str, company=False, working_office=False) -> str:
+        try:
+            deleted_new_line_text = raw_data.replace("\r\n", "").replace("\n", "").replace("\r", "")
+            deleted_spaces_text = re.sub("  +", "", deleted_new_line_text)
+            text = deleted_spaces_text.replace("\u3000", " ").replace("\xa0", " ")
+            if company is True:
+                text = text.replace("株式会社 ", "(株)").replace("株式会社", "(株)")
+            if working_office is True:
+                text = text.replace("勤務地", "")
+            return text
+        except Exception as e:
+            self.logger.error("failed to replace text.")
+            self.logger.error(e)
