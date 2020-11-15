@@ -17,7 +17,7 @@ class ScrapingRikunabi(BaseScraping):
 
     def __init__(self):
         logging.config.fileConfig('config_python/logging.conf')
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.table = Rikunabi()
         self.BASE_PAGE = 'https://next.rikunabi.com/lst_new/?leadtc=top_new_lst'
         self.rikunabi_uri = 'https://next.rikunabi.com'
@@ -33,7 +33,7 @@ class ScrapingRikunabi(BaseScraping):
             return max_job_offers
         except Exception as e:
             self.logger.error("failed to get number of max job offers")
-            self.logger.error(e)
+            self.logger.exception(e)
 
     def get_companies_links_on_the_page(self, parser: BeautifulSoup) -> list:
         """ 各企業の求人詳細ページリンクを取得する """
@@ -49,7 +49,7 @@ class ScrapingRikunabi(BaseScraping):
             return companies_links_list
         except Exception as e:
             self.logger.error("failed to get companies_links on the page:%s" % self.current_page_url)
-            self.logger.error(e)
+            self.logger.exception(e)
 
     def replace_n5_url(self, parser: BeautifulSoup) -> str:
         try:
@@ -58,7 +58,7 @@ class ScrapingRikunabi(BaseScraping):
             return replaced_company_link
         except Exception as e:
             self.logger.error("failed to replace url.")
-            self.logger.error(e)
+            self.logger.exception(e)
 
     def fetch_parser(self, url: str) -> BeautifulSoup:
         """ 求人詳細の解析を取得する """
@@ -86,7 +86,7 @@ class ScrapingRikunabi(BaseScraping):
             return company_name
         except Exception as e:
             self.logger.error("failed to get company_name.")
-            self.logger.error(e)
+            self.logger.exception(e)
 
     def get_address(self, parser: BeautifulSoup) -> str:
         """ 連絡先住所を取得する """
@@ -108,7 +108,7 @@ class ScrapingRikunabi(BaseScraping):
             address = super().replace_text(address)
         except Exception as e:
             self.logger.error("failed to get address.")
-            self.logger.error(e)
+            self.logger.exception(e)
         finally:
             return address 
 
@@ -133,7 +133,7 @@ class ScrapingRikunabi(BaseScraping):
             postal_code = postal_code[0].replace("〒", "")
         except Exception as e:
             self.logger.error("failed to get postal code.")
-            self.logger.error(e)
+            self.logger.exception(e)
         finally:
             return postal_code
 
@@ -154,7 +154,7 @@ class ScrapingRikunabi(BaseScraping):
             tel = tel_elem[0]
         except Exception as e:
             self.logger.error("failed to get tel.")
-            self.logger.error(e)
+            self.logger.exception(e)
         finally:
             return tel
         
@@ -173,7 +173,7 @@ class ScrapingRikunabi(BaseScraping):
             working_offices = super().replace_text(element.text, working_office=True)
         except Exception as e:
             self.logger.error("failed to get working office.")
-            self.logger.error(e)
+            self.logger.exception(e)
         finally:
             return working_offices
 
@@ -189,7 +189,7 @@ class ScrapingRikunabi(BaseScraping):
             return company_hp
         except Exception as e:
             self.logger.error("failed to get the commany's website URI.")
-            self.logger.error(e)
+            self.logger.exception(e)
 
     def get_next_page_url(self, pegenations_parser: BeautifulSoup) -> str:
         """ ページ数分の各URLを取得する """
@@ -203,7 +203,7 @@ class ScrapingRikunabi(BaseScraping):
                     return next_page_url
         except Exception as e:
             self.logger.error("failed to get next page url.")
-            self.logger.error(e)
+            self.logger.exception(e)
 
     def main(self):
         page_counter = 1
@@ -250,7 +250,7 @@ class ScrapingRikunabi(BaseScraping):
                         self.logger.info(str(data_counter) + ": " + company_name + " was sucessfully inserted")
                         data_counter += 1
                     except Exception as e:
-                        self.logger.error(e)
+                        self.logger.exception(e)
                         continue
                 pegenations_parser = super().get_parser(self.current_page_url)
                 next_page_url = self.get_next_page_url(pegenations_parser)
@@ -260,7 +260,7 @@ class ScrapingRikunabi(BaseScraping):
 
         except Exception as e:
             self.logger.error("faild to fetching imformation at %s" % self.present_uri)
-            self.logger.error(e)
+            self.logger.exception(e)
 
 
 if __name__ == "__main__":
