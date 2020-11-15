@@ -5,7 +5,6 @@ import re
 import time
 import logging.config
 
-import requests
 from bs4 import BeautifulSoup
 
 from config_db.database import db
@@ -19,7 +18,8 @@ class ScrapingDoda(BaseScraping):
         logging.config.fileConfig('config_python/logging.conf')
         self.logger = logging.getLogger(__name__)
         self.table = Doda()
-        self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
+        # self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
+        self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?charset=SHIFT-JIS&fktt=4&kk=2&sid=TopSearch&usrclk=PC_logout_kyujinSearchArea_searchButton_job&oc=12L'
 
     def get_company_urls_on_the_page(self, page_parser: BeautifulSoup) -> list:
         key_tags = page_parser.find_all("a")
@@ -79,12 +79,13 @@ class ScrapingDoda(BaseScraping):
 
         match_address = re.compile("所在地")
         match_tel = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
+        current_page_url = self.BASE_PAGE
+        page_counter = 1
+        data_counter = 1
+        parser = super().get_parser(current_page_url)
 
         try:
-            max_page_number = super().how_many_pages_exists()
-            page_counter = 1
-            data_counter = 1
-            current_page_url = self.BASE_PAGE
+            max_page_number = super().how_many_pages_exists(parser)
             while page_counter < max_page_number:
                 self.logger.info(
                     ("starting analyze [%s/%s]: " % (str(page_counter), str(max_page_number))
@@ -95,6 +96,8 @@ class ScrapingDoda(BaseScraping):
                 for url_doda in company_urls:
                     time.sleep(1)
                     try:
+                        if '-tab__pr/' in url_doda:
+                            url_doda = url_doda.replace('-tab__pr', '-tab__jd/-fm__jobdetail/-mpsc_sid__10')
                         url_doda_parser = super().get_parser(url_doda)
                         company_name = super().get_company_name(url_doda_parser)
                         postal_code, address = self.get_postal_code_and_address(url_doda_parser, match_address)
