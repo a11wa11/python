@@ -14,7 +14,7 @@ class BaseScraping():
 
     def __init__(self):
         logging.config.fileConfig('config_python/logging.conf')
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.table = None
         self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
         self.OTHER_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?pic=1&ds=0&so=50&tp=1&page='
@@ -27,9 +27,10 @@ class BaseScraping():
             db.create_tables([self.table.__class__])
         except Exception as e:
             self.logger.error("failed to drop %s table" % table_name)
-            self.logger.error(e)
+            self.logger.exception(e)
 
     def get_parser(self, url: str) -> BeautifulSoup:
+        """ 指定のURLからパーサーを取得する """
         html = requests.get(url)
         parser = BeautifulSoup(html.text, "html.parser")
         return parser
@@ -107,4 +108,4 @@ class BaseScraping():
             return text
         except Exception as e:
             self.logger.error("failed to replace text.")
-            self.logger.error(e)
+            self.logger.exception(e)

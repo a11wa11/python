@@ -16,7 +16,7 @@ class ScrapingDoda(BaseScraping):
 
     def __init__(self):
         logging.config.fileConfig('config_python/logging.conf')
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.table = Doda()
         # self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?ss=1&pic=1&ds=0&so=50&tp=1'
         self.BASE_PAGE = 'https://doda.jp/DodaFront/View/JobSearchList.action?charset=SHIFT-JIS&fktt=4&kk=2&sid=TopSearch&usrclk=PC_logout_kyujinSearchArea_searchButton_job&oc=12L'
@@ -33,8 +33,8 @@ class ScrapingDoda(BaseScraping):
         return company_urls
 
     def get_postal_code_and_address(self, parser: BeautifulSoup, match_address: object) -> tuple:
+        postal_code, address = "", ""
         try:
-            postal_code, address = "", ""
             address_tag = parser.find("th", text=match_address)
             address_tag = parser.find("dt", text=match_address) if address_tag is None else address_tag
             if not address_tag:
@@ -78,6 +78,7 @@ class ScrapingDoda(BaseScraping):
         db.create_tables([Doda])
 
         match_address = re.compile("所在地")
+        match_comp_url=re.compile("企業URL")
         match_tel = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
         current_page_url = self.BASE_PAGE
         page_counter = 1
@@ -102,7 +103,7 @@ class ScrapingDoda(BaseScraping):
                         company_name = super().get_company_name(url_doda_parser)
                         postal_code, address = self.get_postal_code_and_address(url_doda_parser, match_address)
                         tel, remarks = self.get_tel(url_doda_parser, match_tel, address)
-                        company_hp = super().get_commany_hp(url_doda_parser)
+                        company_hp = super().get_commany_hp(url_doda_parser, match_comp_url)
                         self.table.insert(
                             company_name = company_name,
                             url_doda = url_doda,
@@ -115,7 +116,7 @@ class ScrapingDoda(BaseScraping):
                         self.logger.info(str(data_counter) + ": " + company_name + " was sucessfully inserted")
                         data_counter += 1
                     except Exception as e:
-                        self.logger.error(e)
+                        self.logger.exception(e)
                         continue
                 pegenations_parser = super().get_parser(current_page_url)
                 next_page_url = super().get_next_page_url(pegenations_parser)
@@ -124,7 +125,7 @@ class ScrapingDoda(BaseScraping):
             self.logger.info("finished analyze.")
 
         except Exception as e:
-            self.logger.error(e)
+            self.logger.exception(e)
 
 
 if __name__ == "__main__":
