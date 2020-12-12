@@ -3,12 +3,10 @@
 
 import re
 import time
-import logging.config
 
 import requests
 from bs4 import BeautifulSoup
 
-from config_db.database import db
 from config_db.rikunabi import Rikunabi
 from base_scraping import BaseScraping
 
@@ -16,40 +14,11 @@ from base_scraping import BaseScraping
 class ScrapingRikunabi(BaseScraping):
 
     def __init__(self):
-        logging.config.fileConfig('config_python/logging.conf')
-        self.logger = logging.getLogger(self.__class__.__name__)
+        super().__init__()
         self.table = Rikunabi()
         self.BASE_PAGE = 'https://next.rikunabi.com/lst_new/?leadtc=top_new_lst'
         self.rikunabi_uri = 'https://next.rikunabi.com'
-        self.present_uri = None
-        self.match_tel = re.compile(r'[\(]{0,1}[0-9]{2,4}[\)\-\(‐]{0,1}[0-9]{2,4}[\)\-－]{0,1}[0-9]{3,4}')
         self.recruit_agent = False
-
-    def how_many_job_offers_exists(self, parser: BeautifulSoup) -> int:
-        """ 求人数を取得する """
-        try:
-            max_job_offers = int(parser.find_all("span", class_="js-resultCount")[-1].string)
-            self.logger.info("Max Number of Job-offers is %s" % max_job_offers)
-            return max_job_offers
-        except Exception as e:
-            self.logger.error("failed to get number of max job offers")
-            self.logger.exception(e)
-
-    def get_companies_links_on_the_page(self, parser: BeautifulSoup) -> list:
-        """ 各企業の求人詳細ページリンクを取得する """
-        try:
-            links = parser.find_all("a")
-            companies_links_list = []
-            for link in links:
-                if ("class" not in link.attrs) or ("rnn-linkText" and "rnn-linkText--black" not in link['class']):
-                    continue
-                company_link = self.rikunabi_uri + link.get("href")
-                if company_link not in companies_links_list:
-                    companies_links_list.append(company_link)
-            return companies_links_list
-        except Exception as e:
-            self.logger.error("failed to get companies_links on the page:%s" % self.current_page_url)
-            self.logger.exception(e)
 
     def replace_n5_url(self, parser: BeautifulSoup) -> str:
         try:
@@ -75,19 +44,6 @@ class ScrapingRikunabi(BaseScraping):
         else:
             self.recruit_agent = False
 
-    def get_company_name(self, parser: BeautifulSoup) -> str:
-        """ 会社名を取得する """
-        try:
-            if self.recruit_agent == True:
-                company_name_txt = parser.find("p", class_="rnn-offerCompanyName").string
-            else:
-                company_name_txt = parser.find("a", class_="rn3-companyOfferCompany__link js-companyOfferCompany__link").string
-            company_name = super().replace_text(company_name_txt, True)
-            return company_name
-        except Exception as e:
-            self.logger.error("failed to get company_name.")
-            self.logger.exception(e)
-
     def get_address(self, parser: BeautifulSoup) -> str:
         """ 連絡先住所を取得する """
         address = None
@@ -104,7 +60,7 @@ class ScrapingRikunabi(BaseScraping):
                 raw_data_address = address_lists[0].find_next_siblings()[0]
 
             address = raw_data_address.text
-            address = re.sub(r"〒[0-9]{3}-[0-9]{4}", "", address)
+            address = re.sub(self.match_post, "", address)
             address = super().replace_text(address)
         except Exception as e:
             self.logger.error("failed to get address.")
@@ -129,7 +85,7 @@ class ScrapingRikunabi(BaseScraping):
             match_address = re.findall(r"〒[0-9]{3}-[0-9]{4}.+", raw_data_address.text)
             if not match_address:
                 return
-            postal_code = re.findall(r"〒[0-9]{3}-[0-9]{4}", match_address[0])
+            postal_code = re.findall(self.match_post, match_address[0])
             postal_code = postal_code[0].replace("〒", "")
         except Exception as e:
             self.logger.error("failed to get postal code.")
@@ -209,18 +165,20 @@ class ScrapingRikunabi(BaseScraping):
         page_counter = 1
         data_counter = 1
         self.current_page_url = self.BASE_PAGE
+        link_condition = "rnn-linkText" and "rnn-linkText--black"
         job_offers_parser = super().get_parser(self.current_page_url)
 
         try:
             super().drop_table("rikunabi")
-            max_job_offers = self.how_many_job_offers_exists(job_offers_parser)
+            max_job_offers = super().how_many_job_offers_exists(job_offers_parser)
             while data_counter < max_job_offers:
                 self.logger.info(
                     ("starting analyze [%s/%s]: " % (str(data_counter), str(max_job_offers))
                     ) + self.current_page_url
                 )
                 page_parser = super().get_parser(self.current_page_url)
-                url_rikunabi_list = self.get_companies_links_on_the_page(page_parser)
+                pre_url_rikunabi_list = super().get_companies_links_on_the_page(page_parser, link_condition)
+                url_rikunabi_list = [self.rikunabi_uri + url for url in pre_url_rikunabi_list]
                 for url_rikunabi in url_rikunabi_list:
                     self.present_uri = url_rikunabi
                     time.sleep(1)
@@ -231,7 +189,12 @@ class ScrapingRikunabi(BaseScraping):
                         url_rikunabi_parser = self.fetch_parser(url_rikunabi)
                         self.check_recruit_agent(url_rikunabi_parser)
 
-                        company_name = self.get_company_name(url_rikunabi_parser)
+                        if self.recruit_agent == True:
+                            company_terms = {'tag': 'p', 'class': 'rnn-offerCompanyName'}
+                        else:
+                            company_terms = {'tag': 'a', 'class': 'rn3-companyOfferCompany__link js-companyOfferCompany__link'}
+
+                        company_name = super().get_company_name(url_rikunabi_parser, company_terms)
                         address = self.get_address(url_rikunabi_parser)
                         postal_code = self.get_postal_code(url_rikunabi_parser)
                         tel = self.get_tel(url_rikunabi_parser)
