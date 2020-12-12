@@ -9,7 +9,7 @@ services:
     expose: 
       - "3306"
     ports:
-      - 3306:3306
+      - 33060:3306
     volumes:
       - "vol_mysql:/var/lib/mysql"
       - "./config_db/my.cnf:/etc/mysql/conf.d/my.cnf:ro"
